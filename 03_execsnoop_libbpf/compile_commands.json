@@ -1,0 +1,42 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-g",
+      "-O2",
+      "-target",
+      "bpf",
+      "-D__TARGET_ARCH_x86",
+      "-Ilibbpf/usr/include",
+      "-I../libbpf/include/uapi",
+      "-I/usr/include/x86_64-linux-gnu",
+      "-I.",
+      "-c",
+      "-o",
+      "execsnoop.bpf.o",
+      "execsnoop.bpf.c"
+    ],
+    "directory": "/home/bpf/03_execsnoop_libbpf",
+    "file": "/home/bpf/03_execsnoop_libbpf/execsnoop.bpf.c",
+    "output": "/home/bpf/03_execsnoop_libbpf/execsnoop.bpf.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/clang",
+      "-g",
+      "-O2",
+      "-Wall",
+      "-Ilibbpf/usr/include",
+      "-I../libbpf/include/uapi",
+      "-I/usr/include/x86_64-linux-gnu",
+      "-I.",
+      "-c",
+      "-o",
+      "execsnoop.o",
+      "execsnoop.c"
+    ],
+    "directory": "/home/bpf/03_execsnoop_libbpf",
+    "file": "/home/bpf/03_execsnoop_libbpf/execsnoop.c",
+    "output": "/home/bpf/03_execsnoop_libbpf/execsnoop.o"
+  }
+]
