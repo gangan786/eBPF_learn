@@ -9,11 +9,11 @@ static const struct event empty_event = { };
 
 // define hash map and perf event map
 struct {
-	__uint(type, BPF_MAP_TYPE_HASH);
-	__uint(max_entries, 10240);
-	__type(key, pid_t);
-	__type(value, struct event);
-} execs SEC(".maps");
+	__uint(type, BPF_MAP_TYPE_HASH);// int *type[BPF_MAP_TYPE_HASH]，这个BPF_MAP_TYPE_HASH决定了这个映射是属于什么数据类型，
+	__uint(max_entries, 10240); // int *max_entries[10240]
+	__type(key, pid_t); // pid_t *key
+	__type(value, struct event); // event *value
+} execs_gangan SEC(".maps");
 
 struct {
 	__uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
@@ -23,6 +23,10 @@ struct {
 events SEC(".maps");
 
 // tracepoint for sys_enter_execve.
+/*
+在 eBPF（Extended Berkeley Packet Filter）程序中，
+将函数放置在特定的内存段中是必要的，以便内核能够正确识别和加载这些函数。
+*/
 SEC("tracepoint/syscalls/sys_enter_execve")
 int tracepoint__syscalls__sys_enter_execve(struct trace_event_raw_sys_enter
 					   *ctx)
@@ -35,11 +39,18 @@ int tracepoint__syscalls__sys_enter_execve(struct trace_event_raw_sys_enter
 	u64 id = bpf_get_current_pid_tgid();
 	pid_t pid = (pid_t) id;
 
+	// 使用全局变量empty_event，而不是构建一个新的局部变量，是考虑到bpf的栈空间有限，不利于构建大量的对象，
+	/* 
+	而且bpf_map_update_elem是原子操作，
+	内核在实现 bpf_map_update_elem 时使用了锁机制来确保并发安全。
+	具体来说，内核会在更新 map 元素时获取相应的锁，防止其他 CPU 同时修改同一个元素。
+	*/
 	// update the exec metadata to execs map
-	if (bpf_map_update_elem(&execs, &pid, &empty_event, BPF_NOEXIST)) {
+	// BPF_NOEXIST：表示如果键已经存在，则不进行更新
+	if (bpf_map_update_elem(&execs_gangan, &pid, &empty_event, BPF_NOEXIST)) {
 		return 0;
 	}
-	event = bpf_map_lookup_elem(&execs, &pid);
+	event = bpf_map_lookup_elem(&execs_gangan, &pid);
 	if (!event) {
 		return 0;
 	}
@@ -103,7 +114,7 @@ int tracepoint__syscalls__sys_exit_execve(struct trace_event_raw_sys_exit *ctx)
 	// get the exec metadata from execs map
 	id = bpf_get_current_pid_tgid();
 	pid = (pid_t) id;
-	event = bpf_map_lookup_elem(&execs, &pid);
+	event = bpf_map_lookup_elem(&execs_gangan, &pid);
 	if (!event)
 		return 0;
 
@@ -119,7 +130,7 @@ int tracepoint__syscalls__sys_exit_execve(struct trace_event_raw_sys_exit *ctx)
 				      len);
 
 	// cleanup exec from hash map
-	bpf_map_delete_elem(&execs, &pid);
+	bpf_map_delete_elem(&execs_gangan, &pid);
 	return 0;
 }
 

@@ -11,6 +11,7 @@
 #define LAST_ARG (FULL_MAX_ARGS_ARR - ARGSIZE)
 
 struct event {
+	// 承载进程信息以及返回值
 	char comm[TASK_COMM_LEN];
 	pid_t pid;
 	int retval;
