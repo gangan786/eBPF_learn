@@ -1,0 +1,26 @@
+#include <linux/skbuff.h>
+#include <linux/ip.h>
+#include <linux/socket.h>
+#include <linux/netdevice.h>
+
+/*
+第一个，kfree_skb ，它经常在网络异常丢包时调用；
+第二个，consume_skb ，它在正常网络连接完成时调用。
+*/ 
+kprobe:consume_skb /comm=="curl"/
+{
+  // 1. 第一个参数是 struct sk_buff
+  $skb = (struct sk_buff *)arg0;
+
+  // 2. 从网络头中获取源IP和目的IP
+  $iph = (struct iphdr *)($skb->head + $skb->network_header);
+  $sip = ntop(AF_INET, $iph->saddr);
+  $dip = ntop(AF_INET, $iph->daddr);
+
+  // 3. 只处理TCP协议
+  if ($iph->protocol == IPPROTO_TCP)
+  {
+    // 4. 打印源IP、目的IP和内核调用栈
+    printf("SKB dropped: %s->%s, kstack: %s\n", $sip, $dip, kstack);
+  }
+}
